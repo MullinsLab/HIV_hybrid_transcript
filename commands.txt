@@ -1,0 +1,5 @@
+../../script/locateTemplateIdFromR2.pl BC78E_S46_L001_R2_001.fastq BC78E_R2_tid.txt >BC78E_log.txt
+../../script/trimR1PrimerLTR.pl BC78E_S46_L001_R1_001.fastq BC78E_R2_tid.txt BC78E_R1_trimLTR.fastq BC78E_R1_tid.txt >>BC78E_log.txt
+bwa mem -t 10 ~/human_genome_GRCh38.p2/GCF_000001405.28_GRCh38.p2_genomic.fna BC78E_R1_trimLTR.fastq >BC78E_R1_trimLTR_bwa_human.sam
+../../script/parseSam.pl BC78E_R1_trimLTR_bwa_human.sam BC78E_R1_trimLTR_bwa_human_parsed.csv
+../../script/getConsensusIS.pl BC78E_R1_trimLTR_bwa_human_parsed.csv BC78E_R1_tid.txt ../../human_gff/GRCh38.p2_gene.gff BC78E_template_consensus_IS.csv
