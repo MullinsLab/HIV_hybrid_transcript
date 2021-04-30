@@ -113,12 +113,10 @@ while (my $line = <SAM>) {
 			++$flagstatus{$flag};
 			print "flag: $flag\n";
 		}
-		$r1ref = $r2ref = $r1name = $r2name = $orientation = $r1md = $r2md = $r1seq = $r2seq = $r1pattern = $r2pattern = "";
-		$is = $bp = $r1mappingflag = $r2mappingflag = $r1len = $r2len = $r1mappinglen = $r2mappinglen = 0;
 	}
 
-#	if ($r1mappingflag and ($flag == 147 or $flag == 163)) {
-	if ($r1mappingflag and $r2mappingflag) {
+	if ($r1mappingflag and ($flag == 147 or $flag == 163)) {
+#	if ($r1mappingflag and $r2mappingflag) {
 		if ($r1ref eq $r2ref and $r1name eq $r2name and $r1len == $r2len and $r1len <= 1000) {
 			$nameChrIsBpOrientation{$r1ref}{$is}{$bp}{$orientation}{$r1name} = 1;
 			++$chrIsBpOrientation{$r1ref}{$is}{$bp}{$orientation};
@@ -154,6 +152,8 @@ while (my $line = <SAM>) {
 			$r1nameChrIsBpOrientationidentity{$r1ref}{$is}{$bp}{$orientation}{$r1name} = int ($r1matchlen / $r1mappinglen * 1000 + 0.5) / 1000;
 			$r2nameChrIsBpOrientationidentity{$r1ref}{$is}{$bp}{$orientation}{$r1name} = int ($r2matchlen / $r2mappinglen * 1000 + 0.5) / 1000;
 		}
+		$r1ref = $r2ref = $r1name = $r2name = $orientation = $r1md = $r2md = $r1seq = $r2seq = $r1pattern = $r2pattern = "";
+		$is = $bp = $r1mappingflag = $r2mappingflag = $r1len = $r2len = $r1mappinglen = $r2mappinglen = 0;
 	}	
 }
 close SAM;
