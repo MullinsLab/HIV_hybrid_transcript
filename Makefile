@@ -23,7 +23,7 @@ LTROVLP := $(word 4, $(TEXT))
 ADPTOVLP := $(word 5, $(TEXT))
 LINKEROVLP := $(word 6, $(TEXT))
 
-all : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_breakpoint.csv
+all : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv
 # sickle quality trimming
 $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle.fastq : $(INPUT)/$(sample)_R1.fastq.gz $(INPUT)/$(sample)_R2.fastq.gz | mkdir-output-$(sample)
 	sickle pe -q 20 -w 10 -l 75 -n -t sanger \
@@ -53,7 +53,8 @@ $(OUTPUT)/$(sample)/$(sample)_bwa_human.sam : $(OUTPUT)/$(sample)/$(sample)_R1_s
 	bwa mem -t 10 $(HGENOME) $^ $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq > $@
 # parse sam file
 $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human.sam
-	$(BIN)/parseSamISBreakpoint.pl $^ $@ $(LTR) $(MINMAPLEN)
+#	$(BIN)/parseSamISBreakpoint.pl $^ $@ $(LTR) $(MINMAPLEN)
+	$(BIN)/parseSamBreakpoint.pl $^ $@ $(LTR) $(MINMAPLEN)
 # get consensus IS and breakpoint mapping to human at least 99%
 $(OUTPUT)/$(sample)/$(sample)_consensus_IS_breakpoint.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv	
 	$(BIN)/getConsensusISBPWithIdentity.pl $^ $(GFF) $@ 0.99
