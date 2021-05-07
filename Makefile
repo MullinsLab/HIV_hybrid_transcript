@@ -5,7 +5,8 @@ export SHELLOPTS:=errexit:pipefail
 # pipeline identifying IS from 5'/3' ends
 
 LTR ?= 3
-MINMAPLEN ?= 30
+MINMAPLEN ?= 20
+MINIDENTITY ?= 0.99
 BIN := script
 INPUT := data
 OUTPUT := output_$(LTR)LTR
@@ -23,7 +24,7 @@ LTROVLP := $(word 4, $(TEXT))
 ADPTOVLP := $(word 5, $(TEXT))
 LINKEROVLP := $(word 6, $(TEXT))
 
-all : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv
+all : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv
 # sickle quality trimming
 $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle.fastq : $(INPUT)/$(sample)_R1.fastq.gz $(INPUT)/$(sample)_R2.fastq.gz | mkdir-output-$(sample)
 	sickle pe -q 20 -w 10 -l 75 -n -t sanger \
@@ -50,14 +51,14 @@ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK.fastq : $(OUTPUT)/$(samp
 	$(BIN)/retrievePairReadsFromFastq.pl $^ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR.fastq $@  >> $(OUTPUT)/$(sample)/$(sample)_log.txt
 # map to human genome
 $(OUTPUT)/$(sample)/$(sample)_bwa_human.sam : $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK.fastq
-	bwa mem -t 10 $(HGENOME) $^ $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq > $@
+	bwa mem -t 10 -o $@ $(HGENOME) $^ $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq
 # parse sam file
 $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human.sam
 #	$(BIN)/parseSamISBreakpoint.pl $^ $@ $(LTR) $(MINMAPLEN)
 	$(BIN)/parseSamBreakpoint.pl $^ $@ $(LTR) $(MINMAPLEN)
 # get consensus IS and breakpoint mapping to human at least 99%
-$(OUTPUT)/$(sample)/$(sample)_consensus_IS_breakpoint.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv	
-	$(BIN)/getConsensusISBPWithIdentity.pl $^ $(GFF) $@ 0.99
+$(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv	
+	$(BIN)/getConsensusISBPWithIdentityFusionRepetitiveMapping.pl $^ $(GFF) $@ $(MINIDENTITY)
 # retrieve R1 and R2 reads with IS and breakpoint
 #$(OUTPUT)/$(sample)/$(sample)_ISBP_R1.fastq : $(OUTPUT)/$(sample)/$(sample)_template_consensus_IS_breakpoint.csv	
 #	$(BIN)/retrieveISBPR1R2Reads.pl $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle.fastq $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv $@ $(OUTPUT)/$(sample)/$(sample)_ISBP_R2.fastq
