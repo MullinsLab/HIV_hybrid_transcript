@@ -1,19 +1,43 @@
 #!/usr/bin/perl -w
 
 use strict;
+use warnings;
+use v5.10;
 
-my $usage = "perl parseSamISBreakpoint.pl inputSamFile outFile ltr(3 or 5) map2humanLengthCutoff(default: 20)\n";
+my $usage = "perl parseSamBreakpoint.pl inputSamFile outFile R1trimmecsvfile R2trimmecsvfile ltr(3 or 5) map2humanLengthCutoff(default: 20)\n";
 my $inSam = shift or die $usage;
 my $outFile = shift or die $usage;
+my $r1trfile = shift or die $usage;
+my $r2trfile = shift or die $usage;
 my $ltr = shift or die $usage;
 my $lCut = shift or die $usage;
 my $totalCount = my $is = my $bp = my $r1mappingflag = my $r2mappingflag = my $r1mappinglen = my $r2mappinglen = my $r1len = my $r2len = my $r1pos = my $r1flag = my $r2flag = my $r1as = my $r2as = my $r1xs = my $r2xs = 0;
 my $r1ref = my $r2ref = my $r1name = my $r2name = my $orientation = my $r1md = my $r2md = my $r1seq = my $r2seq = my $r1pattern = my $r2pattern = my $r1mapq = my $r2mapq = "";
 my (%chrIsBpOrientation, %nameChrIsBpOrientation, %flagstatus, %r1nameChrIsBpOrientationidentity, %r2nameChrIsBpOrientationidentity, %r1nameAs, %r2nameAs, %r1nameXs, %r2nameXs);
 my (%r1nameSeq, %r1nameSeqlen, %r1namePattern, %r2nameSeq, %r2nameSeqlen, %r2namePattern, %r1nameRef, %r1namePos, %r1nameFlag, %r2nameFlag, %r1nameMapq, %r2nameMapq, %r1nameMaplen, %r2nameMaplen);
+my (%r1nameTrimmed, %r1nameRemain, %r2nameTrimmed, %r2nameRemain);
+open R1, "<", $r1trfile or die "couldn't open $r1trfile: $!\n";
+while (my $line = <R1>) {
+	$line =~ s/\R$//;
+	next if ($line =~ /^\s*$/);
+	my ($name, $trimmed, $remain) = split /,/, $line;
+	$r1nameTrimmed{$name} = $trimmed;
+	$r1nameRemain{$name} = $remain;
+}
+close R1;
+open R2, "<", $r2trfile or die "couldn't open $r2trfile: $!\n";
+while (my $line = <R2>) {
+	$line =~ s/\R$//;
+	next if ($line =~ /^\s*$/);
+	my ($name, $trimmed, $remain) = split /,/, $line;
+	$r2nameTrimmed{$name} = $trimmed;
+	$r2nameRemain{$name} = $remain;
+}
+close R2;
+
 open SAM, "<", $inSam or die "couldn't open $inSam: $!\n";
 while (my $line = <SAM>) {
-	chomp $line;
+	$line =~ s/\R$//;
 	next if ($line =~ /^\s*$/ || $line =~ /^@/); 
 	++$totalCount;
 	my @fields = ();
@@ -74,7 +98,7 @@ while (my $line = <SAM>) {
 			$r1xs = $xs;
 			$r1xs =~ s/XS\:i\://;
 			$r1mappinglen = $mapping;
-			$r1seq = $seq;
+			$r1seq = reversecomplement($seq);
 			$r1pattern = $pattern;
 			$r1mappingflag = 1;
 			if ($ltr == 3) {
@@ -103,7 +127,7 @@ while (my $line = <SAM>) {
 				$r2xs = $xs;
 				$r2xs =~ s/XS\:i\://;
 				$r2mappinglen = $mapping;
-				$r2seq = $seq;
+				$r2seq = reversecomplement($seq);
 				$r2pattern = $pattern;
 				$r2mappingflag = 1;
 			}
@@ -139,10 +163,15 @@ while (my $line = <SAM>) {
 	}
 
 	if ($r1mappingflag and ($flag == 147 or $flag == 163 or $flag == 145 or $flag == 161)) {
-#	if ($r1mappingflag and $r2mappingflag) {
 		if ($r1name eq $r2name) {
 			$nameChrIsBpOrientation{$r2ref}{$bp}{$orientation}{$r2name} = 1;
 			++$chrIsBpOrientation{$r2ref}{$bp}{$orientation};
+			if ($r1seq ne $r1nameRemain{$r1name}) {
+				die "R1 mapping to human are different: $r1name: $1seq vs $r1nameRemain{$r1name}\n";
+			}
+			if ($r2seq ne $r2nameRemain{$r2name}) {
+				die "R2 mapping to human are different: $r2name: $2seq vs $r2nameRemain{$r2name}\n";
+			}
 			$r1nameSeq{$r1name} = $r1seq;
 			$r2nameSeq{$r2name} = $r2seq;
 			$r1nameSeqlen{$r1name} = length $r1seq;
@@ -194,14 +223,14 @@ while (my $line = <SAM>) {
 close SAM;
 
 open OUT, ">", $outFile or die "couldn't open $outFile: $!\n";
-print OUT "read,r2ref,breakpoint,r2flag,r2mapq,r2as,r2xs,r1ref,r1pos,r1flag,r1mapq,r1as,r2xs,orientation,r1identity,r2identity,count,r1seq,r1len,r1pattern,r1mlen,r2seq,r2len,r2pattern,r2mlen\n";
+print OUT "read,r2ref,breakpoint,r2flag,r2mapq,r2as,r2xs,r1ref,r1pos,r1flag,r1mapq,r1as,r2xs,orientation,r1identity,r2identity,count,r1ltr,r1seq,r1len,r1pattern,r1mlen,r2linker,r2seq,r2len,r2pattern,r2mlen\n";
 foreach my $ref (sort {$a cmp $b} keys %nameChrIsBpOrientation) {
 	foreach my $bp (sort {$a <=> $b} keys %{$nameChrIsBpOrientation{$ref}}) {
 		foreach my $orientation (keys %{$nameChrIsBpOrientation{$ref}{$bp}}) {
 			foreach my $name (keys %{$nameChrIsBpOrientation{$ref}{$bp}{$orientation}}) {					
 				print OUT "$name,$ref,$bp,$r2nameFlag{$name},$r2nameMapq{$name},$r2nameAs{$name},$r2nameXs{$name},$r1nameRef{$name},$r1namePos{$name},$r1nameFlag{$name},$r1nameMapq{$name},";
 				print OUT "$r1nameAs{$name},$r1nameXs{$name},$orientation,$r1nameChrIsBpOrientationidentity{$r1nameRef{$name}}{$bp}{$orientation}{$name},$r2nameChrIsBpOrientationidentity{$ref}{$bp}{$orientation}{$name},";
-				print OUT "$chrIsBpOrientation{$ref}{$bp}{$orientation},$r1nameSeq{$name},$r1nameSeqlen{$name},$r1namePattern{$name},$r1nameMaplen{$name},$r2nameSeq{$name},$r2nameSeqlen{$name},$r2namePattern{$name},$r2nameMaplen{$name}\n";
+				print OUT "$chrIsBpOrientation{$ref}{$bp}{$orientation},$r1nameTrimmed{$name},$r1nameSeq{$name},$r1nameSeqlen{$name},$r1namePattern{$name},$r1nameMaplen{$name},$r2nameTrimmed{$name},$r2nameSeq{$name},$r2nameSeqlen{$name},$r2namePattern{$name},$r2nameMaplen{$name}\n";
 			}
 		}
 	}
@@ -225,4 +254,11 @@ sub countmapping {
 		}			
 	}
 	return $mappingcount;
+}
+
+sub reversecomplement {
+	my $seq = shift;
+	$seq = reverse $seq;
+	$seq =~ tr /ACGTacgt/TGCAtgca/;	
+	return $seq;
 }
