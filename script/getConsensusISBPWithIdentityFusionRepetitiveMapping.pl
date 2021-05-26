@@ -42,9 +42,9 @@ while (my $line = <IS>) {
 	my $r1identity = $fields[14];
 	my $r2identity = $fields[15];
 	my $multi = $fields[16];
-	my $r1pattern = $fields[19];
-	my $r1mlen = $fields[20];
-	my $r2pattern = $fields[23];
+	my $r1pattern = $fields[20];
+	my $r1mlen = $fields[21];
+	my $r2pattern = $fields[25];
 	
 	$refbpdirmulti{$r2ref}{$bp}{$dir} = $multi;
 	if (!$namestatus{$name}) {
