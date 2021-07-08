@@ -7,12 +7,13 @@ export SHELLOPTS:=errexit:pipefail
 LTR ?= 3
 MINMAPLEN ?= 20
 MINIDENTITY ?= 0.99
+THREADS ?= 10
 BIN := script
 INPUT := data
 OUTPUT := output_$(LTR)LTR
 GFF := human_gff/GRCh38.p2_gene.gff
 HGENOME := human_genome/human_genome_GRCh38.p2/GCF_000001405.28_GRCh38.p2_genomic.fna
-LTRFILE := seqs/ltr.fas
+LTRFILE := seqs/$(LTR)ltr.fas
 ADPTFILE := seqs/adapter.fas
 LINKERFILE := seqs/linker.fas
 
@@ -57,7 +58,7 @@ $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed.csv : $(OUTPUT)/
 	$(BIN)/retrieveTrimmedSeq.pl $(OUTPUT)/$(sample)/$(sample)_R2_sickle.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq $@  >> $(OUTPUT)/$(sample)/$(sample)_log.txt 
 # map to human genome
 $(OUTPUT)/$(sample)/$(sample)_bwa_human.sam : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed.csv
-	bwa mem -t 10 -o $@ $(HGENOME) $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq
+	bwa mem -t $(THREADS) -o $@ $(HGENOME) $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq
 # parse sam file
 $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human.sam
 	$(BIN)/parseSamBreakpoint.pl $^ $@ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK_trimmed.csv $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed.csv $(LTR) $(MINMAPLEN)
