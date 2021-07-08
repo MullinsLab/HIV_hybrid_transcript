@@ -8,6 +8,8 @@ LTR ?= 3
 MINMAPLEN ?= 20
 MINIDENTITY ?= 0.99
 THREADS ?= 10
+MINQUALITY ?= 20
+MINREADLEN ?= 75
 BIN := script
 INPUT := data
 OUTPUT := output_$(LTR)LTR
@@ -28,7 +30,7 @@ LINKEROVLP := $(word 6, $(TEXT))
 all : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv
 # sickle quality trimming
 $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle.fastq : $(INPUT)/$(sample)_R1.fastq.gz $(INPUT)/$(sample)_R2.fastq.gz | mkdir-output-$(sample)
-	sickle pe -q 20 -w 10 -l 75 -n -t sanger \
+	sickle pe -q $(MINQUALITY) -l $(MINREADLEN) -n -t sanger \
 	-f <(gunzip -c $(INPUT)/$(sample)_R1.fastq.gz) \
 	-r <(gunzip -c $(INPUT)/$(sample)_R2.fastq.gz) \
 	-o $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq \
