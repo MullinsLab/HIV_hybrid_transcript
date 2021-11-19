@@ -223,7 +223,7 @@ while (my $line = <SAM>) {
 close SAM;
 
 open OUT, ">", $outFile or die "couldn't open $outFile: $!\n";
-print OUT "read,r2ref,breakpoint,r2flag,r2mapq,r2as,r2xs,r1ref,r1pos,r1flag,r1mapq,r1as,r2xs,orientation,r1identity,r2identity,count,r1ltr,r1seq,r1len,r1pattern,r1mlen,r2linker,r2seq,r2len,r2pattern,r2mlen\n";
+print OUT "read,r2ref,breakpoint,r2flag,r2mapq,r2as,r2xs,r1ref,r1pos,r1flag,r1mapq,r1as,r1xs,orientation,r1identity,r2identity,count,r1ltr,r1seq,r1len,r1pattern,r1mlen,r2linker,r2seq,r2len,r2pattern,r2mlen\n";
 foreach my $ref (sort {$a cmp $b} keys %nameChrIsBpOrientation) {
 	foreach my $bp (sort {$a <=> $b} keys %{$nameChrIsBpOrientation{$ref}}) {
 		foreach my $orientation (keys %{$nameChrIsBpOrientation{$ref}{$bp}}) {

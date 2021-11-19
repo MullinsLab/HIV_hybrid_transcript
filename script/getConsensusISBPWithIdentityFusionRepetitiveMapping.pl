@@ -5,6 +5,9 @@
 # consensus IS and breackpoint passing the cutoff of identity (default 0.99)
 # Author: Wenjie Deng
 # Date: 2021-05-05
+# Modified: calculate R1 human consensus for each IS and BP combination, the IS is the
+# beginning of sequence
+# Date: 2021-11-19
 ########################################################################################## 
 
 use strict;
@@ -17,11 +20,11 @@ my $isfile = shift or die $usage;
 my $gfffile = shift or die $usage;
 my $outfile = shift or die $usage;
 my $cutoff = shift || 0.99;
-my $fusionfile = my $repetitivefile = $outfile;
+my $fusionfile = my $repetitivefile = my $collapsedfile = $outfile;
 $fusionfile =~ s/\.csv/_fusion.csv/;
 $repetitivefile =~ s/\.csv/_repetitive.csv/;
 
-my (%namestatus, %nameIS, %nameBP, %nameRef, %nameDir, %chromoGene, %refbpdirmulti, %passcutoffrefisbpdirmulti, %fusionpasscutoffrefisbpdirmulti, %repetitivepasscutoffrefisbpdirmulti);
+my (%namestatus, %nameIS, %nameBP, %nameRef, %nameDir, %chromoGene, %refbpdirmulti, %refisbpdirmulti, %passcutoffrefisbpdirmulti, %fusionpasscutoffrefisbpdirmulti, %repetitivepasscutoffrefisbpdirmulti, %refisbpdirseqs);
 my $lesscount = my $farcount = my $count = my $tidreadcount = 0;
 open IS, $isfile or die "couldn't open $isfile: $!\n";
 while (my $line = <IS>) {
@@ -42,10 +45,11 @@ while (my $line = <IS>) {
 	my $r1identity = $fields[14];
 	my $r2identity = $fields[15];
 	my $multi = $fields[16];
+	my $r1seq = $fields[18];
 	my $r1pattern = $fields[20];
 	my $r1mlen = $fields[21];
 	my $r2pattern = $fields[25];
-	
+	my $is = 0;
 	$refbpdirmulti{$r2ref}{$bp}{$dir} = $multi;
 	if (!$namestatus{$name}) {
 		$namestatus{$name} = 1;
@@ -53,44 +57,62 @@ while (my $line = <IS>) {
 		die "duplicate name: $name\n";
 	}
 	
-	if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
-		if ($r1flag == 99 and $r2flag == 147) {	# R1 forward and properly mapped
-			if ($r1pattern =~ /^\d+M/ and $r2pattern =~ /\d+M$/) {
-				my $is = $r1pos;
+	if ($r1flag == 99 and $r2flag == 147) {	# R1 forward and properly mapped
+		if ($r1pattern =~ /^\d+M/ and $r2pattern =~ /\d+M$/) {
+			$is = $r1pos;
+			++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+			if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
 				if ($r1mapq > 0) {	# not repetitive						
 					++$passcutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
 				}else {
 					++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
 				}
-			}
-		}elsif ($r1flag == 97 and $r2flag == 145) { # R1 forward and fusion
-			if ($r1pattern =~ /^\d+M/ and $r2pattern =~ /\d+M$/) {
-				my $is = $r1pos;
+				my $r1humanseq = substr($r1seq, 0, $r1mlen);
+				push @{$refisbpdirseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;	
+			}			
+		}
+	}elsif ($r1flag == 97 and $r2flag == 145) { # R1 forward and fusion
+		if ($r1pattern =~ /^\d+M/ and $r2pattern =~ /\d+M$/) {
+			$is = $r1pos;
+			++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+			if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
 				if ($r1mapq > 0) {	# not repetitive						
 					++$fusionpasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
 				}else {
 					++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
 				}
-			}
-		}elsif ($r1flag == 83 and $r2flag == 163) {	# R1 reverse and properly mapped
-			if ($r1pattern =~ /\d+M$/ and $r2pattern =~ /^\d+M/) {
-				my $is = $r1pos + $r1mlen - 1;
+				my $r1humanseq = substr($r1seq, 0, $r1mlen);
+				push @{$refisbpdirseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;
+			}			
+		}
+	}elsif ($r1flag == 83 and $r2flag == 163) {	# R1 reverse and properly mapped
+		if ($r1pattern =~ /\d+M$/ and $r2pattern =~ /^\d+M/) {
+			$is = $r1pos + $r1mlen - 1;
+			++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+			if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
 				if ($r1mapq > 0) {	# not repetitive						
 					++$passcutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
 				}else {
 					++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
 				}
-			}
-		}elsif ($r1flag == 81 and $r2flag == 161) {	# R1 reverse and fusion
-			if ($r1pattern =~ /\d+M$/ and $r2pattern =~ /^\d+M/) {
-				my $is = $r1pos + $r1mlen - 1;
+				my $r1humanseq = substr($r1seq, 0, $r1mlen);
+				push @{$refisbpdirseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;
+			}			
+		}
+	}elsif ($r1flag == 81 and $r2flag == 161) {	# R1 reverse and fusion
+		if ($r1pattern =~ /\d+M$/ and $r2pattern =~ /^\d+M/) {
+			$is = $r1pos + $r1mlen - 1;
+			++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+			if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
 				if ($r1mapq > 0) {	# not repetitive						
 					++$fusionpasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
 				}else {
 					++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
 				}
-			}
-		}		
+				my $r1humanseq = substr($r1seq, 0, $r1mlen);
+				push @{$refisbpdirseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;
+			}			
+		}
 	}
 }
 close IS;
@@ -118,113 +140,203 @@ while (my $line = <GFF>) {
 }
 close GFF;
 
-open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
-print OUT "ISchr,IS,BPchr,BP,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_BP_count,pass_IS_BP_identity_".$cutoff."_count\n";
-foreach my $r1ref (sort {$a cmp $b} keys %passcutoffrefisbpdirmulti) {
-	foreach my $r2ref (sort {$a cmp $b} keys %{$passcutoffrefisbpdirmulti{$r1ref}}) {
-		foreach my $is (sort {$a <=> $b} keys %{$passcutoffrefisbpdirmulti{$r1ref}{$r2ref}}) {
-			foreach my $bp (sort {$a <=> $b} keys %{$passcutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}}) {
-				foreach my $dir (keys %{$passcutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}}) {
-					my $isgene = my $genedir = "NA";
-					my $genestart = my $geneend = "NA";
-					foreach my $gene (keys %{$chromoGene{$r1ref}}) {
-						if ($is >= $chromoGene{$r1ref}{$gene}{start} and $is <= $chromoGene{$r1ref}{$gene}{end}) {
-							$isgene = $gene;
-							$genestart = $chromoGene{$r1ref}{$gene}{start};
-							$geneend = $chromoGene{$r1ref}{$gene}{end};
-							if ($chromoGene{$r1ref}{$gene}{dir} eq "+") {
-								$genedir = $dir;
-							}elsif ($chromoGene{$r1ref}{$gene}{dir} eq "-") {
-								if ($dir eq "+") {
-									$genedir = "-";
-								}else {
-									$genedir = "+";
-								}
-							}else {
-								die "No gene orientation for $r1ref, $gene\n";
-							}
-							last;
-						}
-					}
-					print OUT "$r1ref,$is,$r2ref,$bp,$dir,$isgene,$genedir,$genestart,$geneend,$refbpdirmulti{$r2ref}{$bp}{$dir},$passcutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir}\n";
-				}
-			}
-		}
-	}
-	
+if (%passcutoffrefisbpdirmulti) {
+	outputConsensusISbreakpointCSVFile($outfile, \%passcutoffrefisbpdirmulti, \%refisbpdirseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene);
 }
-close OUT;
+if (%fusionpasscutoffrefisbpdirmulti) {
+	outputConsensusISbreakpointCSVFile($fusionfile, \%fusionpasscutoffrefisbpdirmulti, \%refisbpdirseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene);
+}
+if (%repetitivepasscutoffrefisbpdirmulti) {
+	outputConsensusISbreakpointCSVFile($repetitivefile, \%repetitivepasscutoffrefisbpdirmulti, \%refisbpdirseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene);
+}
 
-open FUSION, ">", $fusionfile or die "couldn't open $fusionfile: $!\n";
-print FUSION "ISchr,IS,BPchr,BP,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_BP_count,pass_IS_BP_identity_".$cutoff."_count\n";
-foreach my $r1ref (sort {$a cmp $b} keys %fusionpasscutoffrefisbpdirmulti) {
-	foreach my $r2ref (sort {$a cmp $b} keys %{$fusionpasscutoffrefisbpdirmulti{$r1ref}}) {
-		foreach my $is (sort {$a <=> $b} keys %{$fusionpasscutoffrefisbpdirmulti{$r1ref}{$r2ref}}) {
-			foreach my $bp (sort {$a <=> $b} keys %{$fusionpasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}}) {
-				foreach my $dir (keys %{$fusionpasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}}) {
-					my $isgene = my $genedir = "NA";
-					my $genestart = my $geneend = "NA";
-					foreach my $gene (keys %{$chromoGene{$r1ref}}) {
-						if ($is >= $chromoGene{$r1ref}{$gene}{start} and $is <= $chromoGene{$r1ref}{$gene}{end}) {
-							$isgene = $gene;
-							$genestart = $chromoGene{$r1ref}{$gene}{start};
-							$geneend = $chromoGene{$r1ref}{$gene}{end};
-							if ($chromoGene{$r1ref}{$gene}{dir} eq "+") {
-								$genedir = $dir;
-							}elsif ($chromoGene{$r1ref}{$gene}{dir} eq "-") {
-								if ($dir eq "+") {
-									$genedir = "-";
-								}else {
-									$genedir = "+";
-								}
-							}else {
-								die "No gene orientation for $r1ref, $gene\n";
-							}
-							last;
-						}
-					}
-					print FUSION "$r1ref,$is,$r2ref,$bp,$dir,$isgene,$genedir,$genestart,$geneend,$refbpdirmulti{$r2ref}{$bp}{$dir},$fusionpasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir}\n";
-				}
-			}
-		}
-	}
-	
-}
-close FUSION;
 
-open REP, ">", $repetitivefile or die "couldn't open $repetitivefile: $!\n";
-print REP "ISchr,IS,BPchr,BP,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_BP_count,pass_IS_BP_identity_".$cutoff."_count\n";
-foreach my $r1ref (sort {$a cmp $b} keys %repetitivepasscutoffrefisbpdirmulti) {
-	foreach my $r2ref (sort {$a cmp $b} keys %{$repetitivepasscutoffrefisbpdirmulti{$r1ref}}) {
-		foreach my $is (sort {$a <=> $b} keys %{$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}}) {
-			foreach my $bp (sort {$a <=> $b} keys %{$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}}) {
-				foreach my $dir (keys %{$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}}) {
-					my $isgene = my $genedir = "NA";
-					my $genestart = my $geneend = "NA";
-					foreach my $gene (keys %{$chromoGene{$r1ref}}) {
-						if ($is >= $chromoGene{$r1ref}{$gene}{start} and $is <= $chromoGene{$r1ref}{$gene}{end}) {
-							$isgene = $gene;
-							$genestart = $chromoGene{$r1ref}{$gene}{start};
-							$geneend = $chromoGene{$r1ref}{$gene}{end};
-							if ($chromoGene{$r1ref}{$gene}{dir} eq "+") {
-								$genedir = $dir;
-							}elsif ($chromoGene{$r1ref}{$gene}{dir} eq "-") {
-								if ($dir eq "+") {
-									$genedir = "-";
+sub outputConsensusISbreakpointCSVFile {
+	my ($outfile, $passcutoffrefisbpdirmulti_ref, $refisbpdirseqs_ref, $refisbpdirmulti_ref, $refbpdirmulti_ref, $chromoGene_ref) = @_;
+	open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
+	print OUT "ISchr,IS,BPchr,BP,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_BP_count,total_IS_BP_count,pass_IS_BP_identity_".$cutoff."_count,consensus\n";
+	foreach my $r1ref (sort {$a cmp $b} keys %{$passcutoffrefisbpdirmulti_ref}) {
+		foreach my $r2ref (sort {$a cmp $b} keys %{$passcutoffrefisbpdirmulti_ref->{$r1ref}}) {
+			foreach my $is (sort {$a <=> $b} keys %{$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}}) {
+				foreach my $bp (sort {$a <=> $b} keys %{$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}}) {
+					foreach my $dir (keys %{$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}}) {
+						my $isgene = my $genedir = "NA";
+						my $genestart = my $geneend = "NA";
+						foreach my $gene (keys %{$chromoGene_ref->{$r1ref}}) {
+							if ($is >= $chromoGene_ref->{$r1ref}->{$gene}->{start} and $is <= $chromoGene_ref->{$r1ref}->{$gene}->{end}) {
+								$isgene = $gene;
+								$genestart = $chromoGene_ref->{$r1ref}->{$gene}->{start};
+								$geneend = $chromoGene_ref->{$r1ref}->{$gene}->{end};
+								if ($chromoGene_ref->{$r1ref}->{$gene}->{dir} eq "+") {
+									$genedir = $dir;
+								}elsif ($chromoGene_ref->{$r1ref}->{$gene}->{dir} eq "-") {
+									if ($dir eq "+") {
+										$genedir = "-";
+									}else {
+										$genedir = "+";
+									}
 								}else {
-									$genedir = "+";
+									die "No gene orientation for $r1ref, $gene\n";
 								}
-							}else {
-								die "No gene orientation for $r1ref, $gene\n";
+								last;
 							}
-							last;
 						}
+						my $collapsedfile = $is."_".$bp."_collapsed.fasta";
+						my $consensus = consensus_seqs($collapsedfile, \@{$refisbpdirseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}});
+						$consensus =~ s/-//g;
+						print OUT "$r1ref,$is,$r2ref,$bp,$dir,$isgene,$genedir,$genestart,$geneend,$refbpdirmulti_ref->{$r2ref}->{$bp}->{$dir},$refisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$consensus\n";
 					}
-					print REP "$r1ref,$is,$r2ref,$bp,$dir,$isgene,$genedir,$genestart,$geneend,$refbpdirmulti{$r2ref}{$bp}{$dir},$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir}\n";
 				}
 			}
-		}
+		}	
 	}
-	
+	close OUT;
 }
-close REP;
+
+
+sub get_consensus {
+	my $nt = shift;
+	my %consnt = (
+		'-' => '-',
+		'A' => 'A',
+		'C' => 'C',
+		'G' => 'G',
+		'T' => 'T',
+		'AG' => 'R',
+		'CT' => 'Y',
+		'CG' => 'S',
+		'AT' => 'W',
+		'GT' => 'K',
+		'AC' => 'M',
+		'CGT' => 'B',
+		'ACG' => 'V',
+		'AGT' => 'D',
+		'ACT' => 'H',
+		'ACGT' => 'N',
+	);
+	return $consnt{$nt};
+}
+
+
+sub consensus_seqs {
+	my $file = shift;
+	my $seqs_ref = shift;
+	my %seqCount = ();
+	my $consensus = "";
+	foreach my $seq (@{$seqs_ref}) {
+		if (!$seqCount{$seq}) {
+			$seqCount{$seq} = 0;
+		}
+		++$seqCount{$seq};
+	}
+	if (keys %seqCount == 1) {
+		($consensus) = keys %seqCount;
+		my ($value) = values %seqCount;
+	}else {
+		my @sortedseqs = sort {$seqCount{$b} <=> $seqCount{$a}} keys %seqCount;
+		my $idx = my $count = 0;
+		foreach my $seq (@sortedseqs) {
+			$count += $seqCount{$seq};
+		}
+		if ($seqCount{$sortedseqs[0]} > 0.5 * $count) {
+			$consensus = $sortedseqs[0];
+		}else {
+			open TMP, ">", $file or die "couldn't open $file: $!\n";
+			foreach my $seq (@sortedseqs) {
+				++$idx;
+				my $name = $idx."_".$seqCount{$seq};
+				print TMP ">$name\n$seq\n";
+			}
+			my $align_file = $file;
+			$align_file =~ s/\.fasta/_align.fasta/;
+			system("muscle -quiet -in $file -out $align_file");
+			my $name = "";
+			my $alignlen = 0;
+			my (@names, %nameSeq, %nameStart, %nameEnd, %nameNts, %posCount, %posNtCount);
+			open ALIGN, "<", $align_file or die "couldn't open $align_file: $!\n";
+			while (my $line = <ALIGN>) {
+				chomp $line;
+				if ($line =~ /^>(\S+)/) {
+					$name = $1;
+					push @names, $name;
+				}else {
+					$nameSeq{$name} .= $line;
+				}
+			}
+			close ALIGN;
+			unlink $file;
+			unlink $align_file;
+			foreach my $name (@names) {
+				my $seq = $nameSeq{$name};
+				my @nts = split //, $seq;
+				@{$nameNts{$name}} = split //, $seq;
+				if (!$alignlen) {
+					$alignlen = length $seq;
+				}
+				if (length $seq != $alignlen) {
+					die "sequences are not aligned\n";
+				}
+				for (my $i = 0; $i < $alignlen; $i++) {
+					if ($nts[$i] =~ /[ACGT]/) {
+						$nameStart{$name} = $i;
+						last;
+					}
+				}
+				for (my $i = $alignlen - 1; $i >= 0; $i--) {
+					if ($nts[$i] =~ /[ACGT]/) {
+						$nameEnd{$name} = $i;
+						last;
+					}
+				}
+			}
+			for (my $i = 0; $i < $alignlen; $i++) {
+				foreach my $name (@names) {
+					my $duplicates = 0;
+					if ($name =~ /_(\d+)$/) {
+						$duplicates = $1;
+					}else {
+						die "name not formatted: $name\n";
+					}
+					if ($i >= $nameStart{$name} and $i <= $nameEnd{$name}) {
+						$posCount{$i} += $duplicates;
+						$posNtCount{$i}{$nameNts{$name}[$i]} += $duplicates;
+					}
+				}
+				if ($posCount{$i} >= 0.5 * $count) {
+					# get consensus Nt
+					my $consnt = '';
+					my @sortedNts = sort{$posNtCount{$i}{$b} <=> $posNtCount{$i}{$a}} keys %{$posNtCount{$i}};
+					if (scalar @sortedNts == 1 or $posNtCount{$i}{$sortedNts[0]} > $posNtCount{$i}{$sortedNts[1]}) {
+						$consnt = $sortedNts[0];
+					}elsif ($posNtCount{$i}{$sortedNts[0]} == $posNtCount{$i}{$sortedNts[1]}) {						
+						if ($sortedNts[0] eq '-') {
+							$consnt = $sortedNts[1];
+						}else {
+							$consnt = $sortedNts[0].$sortedNts[1];
+						}
+						if ($sortedNts[2] and $posNtCount{$i}{$sortedNts[2]} == $posNtCount{$i}{$sortedNts[0]}) {
+							$consnt .= $sortedNts[2];
+						}
+						if ($sortedNts[3] and $posNtCount{$i}{$sortedNts[3]} == $posNtCount{$i}{$sortedNts[0]}) {
+							$consnt .= $sortedNts[3];
+						}
+						if ($sortedNts[4] and $posNtCount{$i}{$sortedNts[4]} == $posNtCount{$i}{$sortedNts[0]}) {
+							$consnt .= $sortedNts[4];
+						}
+					}else {
+						die "impossible! $posNtCount{$i}{$sortedNts[0]} < $posNtCount{$i}{$sortedNts[1]}\n";
+					}
+					if (length $consnt > 1) {
+						my @nts = split //, $consnt;
+						my @sortnts = sort {$a cmp $b} @nts;
+						$consnt = join('', @sortnts);
+					}
+					$consensus .= get_consensus($consnt)
+				}else {
+					last;
+				}
+			} 
+		}
+	}		
+	return $consensus;
+}
