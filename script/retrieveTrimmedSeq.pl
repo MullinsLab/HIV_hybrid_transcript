@@ -53,16 +53,21 @@ while (my $name = <AT>) {
 	my $plus = <AT>;
 	my $qual = <AT>;
 	if ($namestatus{$name}) {
-		my $idx = index($btnameseq{$name}, $seq);
-		if ($idx > 0) {
-			my $trimmedseq = substr($btnameseq{$name}, 0, $idx);
-			print OUT "$name,$trimmedseq,$seq\n";
+		if ($seq) {
+			my $idx = index($btnameseq{$name}, $seq);
+			if ($idx > 0) {
+				my $trimmedseq = substr($btnameseq{$name}, 0, $idx);
+				print OUT "$name,$trimmedseq,$seq\n";
+				++$outcount;
+			}elsif ($idx == 0) {
+				die "read $name not trimmed: $seq vs $btnameseq{$name}\n";
+			}else {
+				die "No matches of $seq to $btnameseq{$name}\n"; 
+			}
+		}else { # no sequence left, all trimmed
+			print OUT "$name,$btnameseq{$name}\n";
 			++$outcount;
-		}elsif ($idx == 0) {
-			die "read not trimmed: $seq vs $btnameseq{$name}\n";
-		}else {
-			die "No matches of $seq to $btnameseq{$name}\n"; 
-		}
+		}		
 	}else {
 		die "No name $name in before trimmed fastq file\n";
 	}

@@ -322,11 +322,7 @@ sub consensus_seqs {
 					if (scalar @sortedNts == 1 or $posNtCount{$i}{$sortedNts[0]} > $posNtCount{$i}{$sortedNts[1]}) {
 						$consnt = $sortedNts[0];
 					}elsif ($posNtCount{$i}{$sortedNts[0]} == $posNtCount{$i}{$sortedNts[1]}) {						
-						if ($sortedNts[0] eq '-') {
-							$consnt = $sortedNts[1];
-						}else {
-							$consnt = $sortedNts[0].$sortedNts[1];
-						}
+						$consnt = $sortedNts[0].$sortedNts[1];
 						if ($sortedNts[2] and $posNtCount{$i}{$sortedNts[2]} == $posNtCount{$i}{$sortedNts[0]}) {
 							$consnt .= $sortedNts[2];
 						}
@@ -339,12 +335,26 @@ sub consensus_seqs {
 					}else {
 						die "impossible! $posNtCount{$i}{$sortedNts[0]} < $posNtCount{$i}{$sortedNts[1]}\n";
 					}
-					if (length $consnt > 1) {
-						my @nts = split //, $consnt;
-						my @sortnts = sort {$a cmp $b} @nts;
-						$consnt = join('', @sortnts);
-					}
-					$consensus .= get_consensus($consnt)
+					if ($consnt) {
+						if (length $consnt > 1) {
+							if ($consnt =~ /\-/) {
+								$consnt =~ s/\-//;
+							}
+							if (length $consnt > 1) {
+								my @nts = split //, $consnt;
+								my @sortnts = sort {$a cmp $b} @nts;
+								$consnt = join('', @sortnts);
+							}							
+						}
+						my $consensusnt = get_consensus($consnt);
+						if ($consensusnt) {
+							$consensus .= $consensusnt;
+						}else {
+							die "No consensusnt for $consnt at position $i\n";
+						}					
+					}else {
+						die "No consnt: $consnt\n";
+					}					
 				}else {
 					last;
 				}
