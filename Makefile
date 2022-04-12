@@ -5,6 +5,7 @@ export SHELLOPTS:=errexit:pipefail
 # pipeline identifying IS from 5'/3' ends
 
 LTR ?= 3
+ERRORRATE ?= 0.1
 MINMAPLEN ?= 20
 MINIDENTITY ?= 0.99
 THREADS ?= 10
@@ -39,16 +40,16 @@ $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq $(OUTPUT)/$(sample)/$(sample)_R2_s
 	> $(OUTPUT)/$(sample)/$(sample)_log.txt
 # trim LTR in filtered R1 reads
 $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR.fastq : $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq
-	cutadapt --trimmed-only -g $(LTRSEQ) -O $(LTROVLP) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
+	cutadapt --trimmed-only -g $(LTRSEQ) -O $(LTROVLP) -e $(ERRORRATE) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
 # retrieve paired R2 reads
 $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR.fastq : $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR.fastq
 	$(BIN)/retrievePairReadsFromFastq.pl $^ $(OUTPUT)/$(sample)/$(sample)_R2_sickle.fastq $@  >> $(OUTPUT)/$(sample)/$(sample)_log.txt
 # trim illumina reverse adapter in paired R2 reads
 $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA.fastq : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR.fastq
-	cutadapt --trimmed-only -g $(ADPTSEQ) -O $(ADPTOVLP) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
+	cutadapt --trimmed-only -g $(ADPTSEQ) -O $(ADPTOVLP) -e $(ERRORRATE) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
 # trim linker in paired R2 reads
 $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA.fastq
-	cutadapt --trimmed-only -g $(LINKERSEQ) -O $(LINKEROVLP) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
+	cutadapt --trimmed-only -g $(LINKERSEQ) -O $(LINKEROVLP) -e $(ERRORRATE) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
 # retrieve paired R1 reads
 $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK.fastq : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq
 	$(BIN)/retrievePairReadsFromFastq.pl $^ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR.fastq $@  >> $(OUTPUT)/$(sample)/$(sample)_log.txt
