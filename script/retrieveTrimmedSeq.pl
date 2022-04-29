@@ -54,7 +54,7 @@ while (my $name = <AT>) {
 	my $qual = <AT>;
 	if ($namestatus{$name}) {
 		if ($seq) {
-			my $idx = index($btnameseq{$name}, $seq);
+			my $idx = rindex($btnameseq{$name}, $seq);
 			if ($idx > 0) {
 				my $trimmedseq = substr($btnameseq{$name}, 0, $idx);
 				print OUT "$name,$trimmedseq,$seq\n";
