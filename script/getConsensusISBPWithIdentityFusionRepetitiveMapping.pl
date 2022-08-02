@@ -164,7 +164,7 @@ if (%repetitivepasscutoffrefisbpdirmulti) {
 sub outputConsensusISbreakpointCSVFile {
 	my ($outfile, $passcutoffrefisbpdirmulti_ref, $refisbpdirr1humanseqs_ref, $refisbpdirr2humanseqs_ref, $refisbpdirmulti_ref, $refbpdirmulti_ref, $chromoGene_ref) = @_;
 	open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
-	print OUT "ISchr,IS,BPchr,BP,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_BP_count,total_IS_BP_count,pass_IS_BP_identity_".$cutoff."_count,IS_consensus,BP_consensus\n";
+	print OUT "ISchr,IS,BPchr,BP,Fragment_size,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_BP_count,total_IS_BP_count,pass_IS_BP_identity_".$cutoff."_count,IS_consensus,BP_consensus\n";
 	foreach my $r1ref (sort {$a cmp $b} keys %{$passcutoffrefisbpdirmulti_ref}) {
 		foreach my $r2ref (sort {$a cmp $b} keys %{$passcutoffrefisbpdirmulti_ref->{$r1ref}}) {
 			foreach my $is (sort {$a <=> $b} keys %{$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}}) {
@@ -197,7 +197,11 @@ sub outputConsensusISbreakpointCSVFile {
 						my $bpcollapsedfile = $is."_".$bp."_bpcollapsed.fasta";
 						my $bpconsensus = consensus_seqs($bpcollapsedfile, \@{$refisbpdirr2humanseqs_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir}});
 						$bpconsensus =~ s/-//g;
-						print OUT "$r1ref,$is,$r2ref,$bp,$dir,$isgene,$genedir,$genestart,$geneend,$refbpdirmulti_ref->{$r2ref}->{$bp}->{$dir},$refisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$isconsensus,$bpconsensus\n";
+						my $fragmentsize = "NA";
+						if ($r1ref eq $r2ref) {
+							$fragmentsize = abs($bp - $is) + 1;
+						} 
+						print OUT "$r1ref,$is,$r2ref,$bp,$fragmentsize,$dir,$isgene,$genedir,$genestart,$geneend,$refbpdirmulti_ref->{$r2ref}->{$bp}->{$dir},$refisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$isconsensus,$bpconsensus\n";
 					}
 				}
 			}
