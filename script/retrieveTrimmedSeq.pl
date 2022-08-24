@@ -12,11 +12,12 @@ use v5.10;
 use Getopt::Long;
 use File::Basename;
 
-my $usage = "usage: retrieveTrimmedSeq.pl beforeTrimmingFastq afterTrimmingFastq outputTrimmingFasta\n";
+my $usage = "usage: retrieveTrimmedSeq.pl beforeTrimmingFastq afterTrimmingFastq outputTrimmingFasta outputTrimmingCSV\n";
 
 my $btfile = shift or die $usage;
 my $atfile = shift or die $usage;
 my $outfile = shift or die $usage;
+my $csvfile = shift or die $usage;
 
 my (%namestatus, %btnameseq, %atnameseq);
 my $btreads = my $outcount = my $atreads = 0;
@@ -43,6 +44,7 @@ close BT;
 
 open AT, $atfile or die "couldn't open $atfile: $!\n";
 open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
+open CSV, ">", $csvfile or die "couldn't open $csvfile: $!\n";
 while (my $name = <AT>) {
 	$name =~ s/\R$//;
 	$name =~ /^(\S+)/;
@@ -57,7 +59,8 @@ while (my $name = <AT>) {
 			my $idx = rindex($btnameseq{$name}, $seq);
 			if ($idx > 0) {
 				my $trimmedseq = substr($btnameseq{$name}, 0, $idx);
-				print OUT "$name,$trimmedseq,$seq\n";
+				print CSV "$name,$trimmedseq,$seq\n";
+				print OUT ">$name\n$trimmedseq\n";
 				++$outcount;
 			}elsif ($idx == 0) {
 				die "read $name not trimmed: $seq vs $btnameseq{$name}\n";
@@ -65,7 +68,8 @@ while (my $name = <AT>) {
 				die "No matches of $seq to $btnameseq{$name}\n"; 
 			}
 		}else { # no sequence left, all trimmed
-			print OUT "$name,$btnameseq{$name}\n";
+			print CSV "$name,$btnameseq{$name}\n";
+			print OUT ">$name\n$btnameseq{$name}\n";
 			++$outcount;
 		}		
 	}else {
@@ -75,5 +79,6 @@ while (my $name = <AT>) {
 }
 close AT;
 close OUT;
+close CSV;
 
 print "retrieveTrimmedSeq.pl: total $btreads before trimming, $atreads after trimming, $outcount trimmed sequences to $outfile.\n";
