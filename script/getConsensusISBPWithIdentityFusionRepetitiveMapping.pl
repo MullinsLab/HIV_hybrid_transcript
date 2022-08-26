@@ -196,6 +196,27 @@ sub outputConsensusISbreakpointCSVFile {
 								last;
 							}
 						}
+						###
+						if ($isgene eq "NA") { # IS outside of gene, get the info of the closest genes
+							my $upDist = my $downDist = 0;
+							my $upGene = my $downGene = 'NA';
+							foreach my $gene (sort {$chromoGene_ref->{$r1ref}->{$b}->{end} <=> $chromoGene_ref->{$r1ref}->{$a}->{end}} keys %{$chromoGene_ref->{$r1ref}}) {
+								if ($is > $chromoGene_ref->{$r1ref}->{$gene}->{end}) {
+									$upDist = ($is - $chromoGene_ref->{$r1ref}->{$gene}->{end}) / 1000;
+									$upGene = $gene;
+									last;
+								}
+							}
+							foreach my $gene (sort {$chromoGene_ref->{$r1ref}->{$a}->{start} <=> $chromoGene_ref->{$r1ref}->{$b}->{start}} keys %{$chromoGene_ref->{$r1ref}}) {
+								if ($chromoGene_ref->{$r1ref}->{$gene}->{start} > $is) {
+									$downDist = ($chromoGene_ref->{$r1ref}->{$gene}->{start} - $is) / 1000;
+									$downGene = $gene;
+									last;
+								}
+							}
+							$isgene = "Upstream: $upGene ($upDist kb); Downstream: $downGene ($downDist kb)";
+						}
+						###
 						my $umicollapsedfile = $is."_".$bp."_umicollapsed.fasta";
 						my $umiconsensus = consensus_seqs($umicollapsedfile, \@{$refisbpdirumis_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir}});
 						$umiconsensus =~ s/-//g;
