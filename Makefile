@@ -28,7 +28,7 @@ LTROVLP := $(word 4, $(TEXT))
 ADPTOVLP := $(word 5, $(TEXT))
 LINKEROVLP := $(word 6, $(TEXT))
 
-all : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv
+all : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP_Final.csv
 # sickle quality trimming
 $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle.fastq : $(INPUT)/$(sample)_R1.fastq.gz $(INPUT)/$(sample)_R2.fastq.gz | mkdir-output-$(sample)
 	sickle pe -q $(MINQUALITY) -l $(MINREADLEN) -n -t sanger \
@@ -77,6 +77,9 @@ $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv : $(OUTPUT)/$(sample)/$(sampl
 # get consensus IS and breakpoint mapping to human at least 99%
 $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv	
 	$(BIN)/getConsensusISBPWithIdentityFusionRepetitiveMapping.pl $^ $(GFF) $@ $(MINIDENTITY)
+# get final IS summary file
+$(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP_Final.csv : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv	
+	$(BIN)/add_quality_control.pl $^ $@
 
 
 mkdir-output-%:
