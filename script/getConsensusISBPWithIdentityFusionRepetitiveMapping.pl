@@ -60,73 +60,77 @@ while (my $line = <IS>) {
 		die "duplicate name: $name\n";
 	}
 	
-	if ($r1flag == 99 and $r2flag == 147) {	# R1 forward and properly mapped
-		if ($r1pattern =~ /^\d+M/ and $r2pattern =~ /\d+M$/) {
-			$is = $r1pos;
-			++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
-			if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
-				if ($r1mapq > 0) {	# not repetitive						
-					++$passcutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
-				}else {
-					++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+	if ($umi eq "NA") {
+		print "*** No UMI for read $name, skipped ***\n";
+	}else {
+		if ($r1flag == 99 and $r2flag == 147) {	# R1 forward and properly mapped
+			if ($r1pattern =~ /^\d+M/ and $r2pattern =~ /\d+M$/) {
+				$is = $r1pos;
+				++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+				if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
+					if ($r1mapq > 0) {	# not repetitive
+						++$passcutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+					}else {
+						++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+					}
+					my $r1humanseq = substr($r1seq, 0, $r1mlen);
+					push @{$refisbpdirr1humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;
+					my $r2humanseq = substr($r2seq, 0, $r2mlen);
+					push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
+					push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
 				}
-				my $r1humanseq = substr($r1seq, 0, $r1mlen);
-				push @{$refisbpdirr1humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;
-				my $r2humanseq = substr($r2seq, 0, $r2mlen);
-				push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
-				push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
-			}			
-		}
-	}elsif ($r1flag == 97 and $r2flag == 145) { # R1 forward and fusion
-		if ($r1pattern =~ /^\d+M/ and $r2pattern =~ /\d+M$/) {
-			$is = $r1pos;
-			++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
-			if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
-				if ($r1mapq > 0) {	# not repetitive						
-					++$fusionpasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
-				}else {
-					++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+			}
+		}elsif ($r1flag == 97 and $r2flag == 145) { # R1 forward and fusion
+			if ($r1pattern =~ /^\d+M/ and $r2pattern =~ /\d+M$/) {
+				$is = $r1pos;
+				++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+				if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
+					if ($r1mapq > 0) {	# not repetitive
+						++$fusionpasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+					}else {
+						++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+					}
+					my $r1humanseq = substr($r1seq, 0, $r1mlen);
+					push @{$refisbpdirr1humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;
+					my $r2humanseq = substr($r2seq, 0, $r2mlen);
+					push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
+					push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
 				}
-				my $r1humanseq = substr($r1seq, 0, $r1mlen);
-				push @{$refisbpdirr1humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;
-				my $r2humanseq = substr($r2seq, 0, $r2mlen);
-				push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
-				push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
-			}			
-		}
-	}elsif ($r1flag == 83 and $r2flag == 163) {	# R1 reverse and properly mapped
-		if ($r1pattern =~ /\d+M$/ and $r2pattern =~ /^\d+M/) {
-			$is = $r1pos + $r1mlen - 1;
-			++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
-			if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
-				if ($r1mapq > 0) {	# not repetitive						
-					++$passcutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
-				}else {
-					++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+			}
+		}elsif ($r1flag == 83 and $r2flag == 163) {	# R1 reverse and properly mapped
+			if ($r1pattern =~ /\d+M$/ and $r2pattern =~ /^\d+M/) {
+				$is = $r1pos + $r1mlen - 1;
+				++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+				if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
+					if ($r1mapq > 0) {	# not repetitive
+						++$passcutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+					}else {
+						++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+					}
+					my $r1humanseq = substr($r1seq, 0, $r1mlen);
+					push @{$refisbpdirr1humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;
+					my $r2humanseq = substr($r2seq, 0, $r2mlen);
+					push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
+					push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
 				}
-				my $r1humanseq = substr($r1seq, 0, $r1mlen);
-				push @{$refisbpdirr1humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;
-				my $r2humanseq = substr($r2seq, 0, $r2mlen);
-				push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
-				push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
-			}			
-		}
-	}elsif ($r1flag == 81 and $r2flag == 161) {	# R1 reverse and fusion
-		if ($r1pattern =~ /\d+M$/ and $r2pattern =~ /^\d+M/) {
-			$is = $r1pos + $r1mlen - 1;
-			++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
-			if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
-				if ($r1mapq > 0) {	# not repetitive						
-					++$fusionpasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
-				}else {
-					++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+			}
+		}elsif ($r1flag == 81 and $r2flag == 161) {	# R1 reverse and fusion
+			if ($r1pattern =~ /\d+M$/ and $r2pattern =~ /^\d+M/) {
+				$is = $r1pos + $r1mlen - 1;
+				++$refisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+				if ($r1identity >= $cutoff and $r2identity >= $cutoff) {
+					if ($r1mapq > 0) {	# not repetitive
+						++$fusionpasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+					}else {
+						++$repetitivepasscutoffrefisbpdirmulti{$r1ref}{$r2ref}{$is}{$bp}{$dir};
+					}
+					my $r1humanseq = substr($r1seq, 0, $r1mlen);
+					push @{$refisbpdirr1humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;
+					my $r2humanseq = substr($r2seq, 0, $r2mlen);
+					push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
+					push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
 				}
-				my $r1humanseq = substr($r1seq, 0, $r1mlen);
-				push @{$refisbpdirr1humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r1humanseq;
-				my $r2humanseq = substr($r2seq, 0, $r2mlen);
-				push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
-				push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
-			}			
+			}
 		}
 	}
 }

@@ -33,7 +33,8 @@ while (my $line = <CSV>) {
 	if ($nameUmi{$name}) {
 		print OUT "$line,$nameUmi{$name}\n";
 	}else {
-		die "NO $name\n";
+		print "*** No UMI for R2 read $name ***\n";
+		print OUT "$line,NA\n";
 	}
 }
 close CSV;
