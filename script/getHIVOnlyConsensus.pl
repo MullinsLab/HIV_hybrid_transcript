@@ -133,15 +133,17 @@ while (my $line = <IS>) {
 close IS;
 
 if (%passcutoffrefisbpdirmulti) {
-	print "final\n";
 	outputConsensusISbreakpointCSVFile($outfile, \%passcutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti);
+}else {
+	print "*** No pair of reads maps to HIV ***\n";
+	open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
+	print OUT "No pair of reads maps to HIV\n";
+	close OUT;
 }
 if (%fusionpasscutoffrefisbpdirmulti) {
-	print "fusion\n";
 	outputConsensusISbreakpointCSVFile($fusionfile, \%fusionpasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti);
 }
 if (%repetitivepasscutoffrefisbpdirmulti) {
-	print "repetitive\n";
 	outputConsensusISbreakpointCSVFile($repetitivefile, \%repetitivepasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti);
 }
 

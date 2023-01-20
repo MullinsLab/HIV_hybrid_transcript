@@ -16,6 +16,13 @@ open CSV, "<", $csvfile or die "couldn't open $csvfile: $!\n";
 while (my $line = <CSV>) {
 	chomp $line;
 	next if $line =~ /^\s*$/;
+	if ($line eq "No IS detected") {
+		print "*** No IS detected ***\n";
+		open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
+		print OUT "$line\n";
+		close OUT;
+		exit;
+	}
 	if ($line =~ /^ISchr,IS,/) {
 		$header = $line;
 	}else {
@@ -33,8 +40,6 @@ while (my $line = <CSV>) {
 			$chrbpstatus{$bpchr}{$bp} = 0;
 		}
 		++$chrbpstatus{$bpchr}{$bp};
-#		print "chrisstatus{$ischr}{$is}: $chrisstatus{$ischr}{$is}\n";
-#		print "chrbpstatus{$bpchr}{$bp}: $chrbpstatus{$bpchr}{$bp}\n";
 		my $isbp = "$ischr,$is,$bpchr,$bp";
 		push @isbps, $isbp;
 		$isbpline{$isbp} = $line;

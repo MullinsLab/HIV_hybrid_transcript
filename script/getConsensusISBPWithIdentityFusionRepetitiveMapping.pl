@@ -161,6 +161,11 @@ close GFF;
 
 if (%passcutoffrefisbpdirmulti) {
 	outputConsensusISbreakpointCSVFile($outfile, \%passcutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene);
+}else {
+	print "*** No IS detected ***\n";
+	open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
+	print OUT "No IS detected\n";
+	close OUT;
 }
 if (%fusionpasscutoffrefisbpdirmulti) {
 	outputConsensusISbreakpointCSVFile($fusionfile, \%fusionpasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene);
