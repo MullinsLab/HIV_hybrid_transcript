@@ -14,17 +14,18 @@ use strict;
 use Getopt::Long;
 use File::Basename;
 
-my $usage = "usage: getConsensusISBPWithIdentityFusionRepetitiveMapping.pl ISList humanGeneGffFile outputConsensusISbreakpointCSVFile identityCutoff\n";
+my $usage = "usage: getConsensusISBPWithIdentityFusionRepetitiveMapping.pl ISList humanGeneGffFile ltr outputConsensusISbreakpointCSVFile identityCutoff\n";
 
 my $isfile = shift or die $usage;
 my $gfffile = shift or die $usage;
+my $ltr = shift or die $usage;
 my $outfile = shift or die $usage;
 my $cutoff = shift || 0.99;
 my $fusionfile = my $repetitivefile = my $collapsedfile = $outfile;
 $fusionfile =~ s/\.csv/_fusion.csv/;
 $repetitivefile =~ s/\.csv/_repetitive.csv/;
 
-my (%namestatus, %nameIS, %nameBP, %nameRef, %nameDir, %chromoGene, %refbpdirmulti, %refisbpdirmulti, %passcutoffrefisbpdirmulti, %fusionpasscutoffrefisbpdirmulti, %repetitivepasscutoffrefisbpdirmulti, %refisbpdirr1humanseqs, %refisbpdirr2humanseqs, %refisbpdirumis);
+my (%namestatus, %nameIS, %nameBP, %nameRef, %nameDir, %chromoGene, %refbpdirmulti, %refisbpdirmulti, %passcutoffrefisbpdirmulti, %fusionpasscutoffrefisbpdirmulti, %repetitivepasscutoffrefisbpdirmulti, %refisbpdirr1humanseqs, %refisbpdirr2humanseqs, %refisbpdirumis, %refisbpdirltrs, %refisbpdirlinkers);
 my $lesscount = my $farcount = my $count = my $tidreadcount = 0;
 open IS, $isfile or die "couldn't open $isfile: $!\n";
 while (my $line = <IS>) {
@@ -45,9 +46,11 @@ while (my $line = <IS>) {
 	my $r1identity = $fields[14];
 	my $r2identity = $fields[15];
 	my $multi = $fields[16];
+	my $ltrseq = $fields[17];
 	my $r1seq = $fields[18];
 	my $r1pattern = $fields[20];
 	my $r1mlen = $fields[21];
+	my $r2linker = $fields[22];
 	my $r2seq = $fields[23];
 	my $r2pattern = $fields[25];
 	my $r2mlen = $fields[26];
@@ -78,6 +81,8 @@ while (my $line = <IS>) {
 					my $r2humanseq = substr($r2seq, 0, $r2mlen);
 					push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
 					push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
+					push @{$refisbpdirltrs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $ltrseq;
+					push @{$refisbpdirlinkers{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2linker;
 				}
 			}
 		}elsif ($r1flag == 97 and $r2flag == 145) { # R1 forward and fusion
@@ -95,6 +100,8 @@ while (my $line = <IS>) {
 					my $r2humanseq = substr($r2seq, 0, $r2mlen);
 					push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
 					push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
+					push @{$refisbpdirltrs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $ltrseq;
+					push @{$refisbpdirlinkers{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2linker;
 				}
 			}
 		}elsif ($r1flag == 83 and $r2flag == 163) {	# R1 reverse and properly mapped
@@ -112,6 +119,8 @@ while (my $line = <IS>) {
 					my $r2humanseq = substr($r2seq, 0, $r2mlen);
 					push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
 					push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
+					push @{$refisbpdirltrs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $ltrseq;
+					push @{$refisbpdirlinkers{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2linker;
 				}
 			}
 		}elsif ($r1flag == 81 and $r2flag == 161) {	# R1 reverse and fusion
@@ -129,6 +138,8 @@ while (my $line = <IS>) {
 					my $r2humanseq = substr($r2seq, 0, $r2mlen);
 					push @{$refisbpdirr2humanseqs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2humanseq;
 					push @{$refisbpdirumis{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $umi;
+					push @{$refisbpdirltrs{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $ltrseq;
+					push @{$refisbpdirlinkers{$r1ref}{$r2ref}{$is}{$bp}{$dir}}, $r2linker;
 				}
 			}
 		}
@@ -160,7 +171,7 @@ while (my $line = <GFF>) {
 close GFF;
 
 if (%passcutoffrefisbpdirmulti) {
-	outputConsensusISbreakpointCSVFile($outfile, \%passcutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene);
+	outputConsensusISbreakpointCSVFile($outfile, $ltr, \%passcutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirltrs, \%refisbpdirr1humanseqs, \%refisbpdirlinkers, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene);
 }else {
 	print "*** No IS detected ***\n";
 	open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
@@ -168,17 +179,17 @@ if (%passcutoffrefisbpdirmulti) {
 	close OUT;
 }
 if (%fusionpasscutoffrefisbpdirmulti) {
-	outputConsensusISbreakpointCSVFile($fusionfile, \%fusionpasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene);
+	outputConsensusISbreakpointCSVFile($fusionfile, $ltr, \%fusionpasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirltrs, \%refisbpdirr1humanseqs, \%refisbpdirlinkers, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene);
 }
 if (%repetitivepasscutoffrefisbpdirmulti) {
-	outputConsensusISbreakpointCSVFile($repetitivefile, \%repetitivepasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene);
+	outputConsensusISbreakpointCSVFile($repetitivefile, $ltr, \%repetitivepasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirltrs, \%refisbpdirr1humanseqs, \%refisbpdirlinkers, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene);
 }
 
 
 sub outputConsensusISbreakpointCSVFile {
-	my ($outfile, $passcutoffrefisbpdirmulti_ref, $refisbpdirumis_ref, $refisbpdirr1humanseqs_ref, $refisbpdirr2humanseqs_ref, $refisbpdirmulti_ref, $refbpdirmulti_ref, $chromoGene_ref) = @_;
+	my ($outfile, $sub_ltr, $passcutoffrefisbpdirmulti_ref, $refisbpdirumis_ref, $refisbpdirltrs_ref, $refisbpdirr1humanseqs_ref, $refisbpdirlinkers_ref, $refisbpdirr2humanseqs_ref, $refisbpdirmulti_ref, $refbpdirmulti_ref, $chromoGene_ref) = @_;
 	open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
-	print OUT "ISchr,IS,BPchr,BP,Fragment_size,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_BP_count,total_IS_BP_count,pass_IS_BP_identity_".$cutoff."_count,IS_consensus,BP_consensus,UMI_consensus\n";
+	print OUT "ISchr,IS,BPchr,BP,Fragment_size,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_BP_count,total_IS_BP_count,pass_IS_BP_identity_".$cutoff."_count,LTR,LTR_consensus,IS_consensus,Linker_consensus,BP_consensus,UMI_consensus\n";
 	foreach my $r1ref (sort {$a cmp $b} keys %{$passcutoffrefisbpdirmulti_ref}) {
 		foreach my $r2ref (sort {$a cmp $b} keys %{$passcutoffrefisbpdirmulti_ref->{$r1ref}}) {
 			foreach my $is (sort {$a <=> $b} keys %{$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}}) {
@@ -229,6 +240,12 @@ sub outputConsensusISbreakpointCSVFile {
 						my $umicollapsedfile = $is."_".$bp."_umicollapsed.fasta";
 						my $umiconsensus = consensus_seqs($umicollapsedfile, \@{$refisbpdirumis_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir}});
 						$umiconsensus =~ s/-//g;
+						my $ltrcollapsedfile = $is."_".$bp."_ltrcollapsed.fasta";
+						my $ltrconsensus = consensus_seqs($ltrcollapsedfile, \@{$refisbpdirltrs_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir}});
+						$ltrconsensus =~ s/-//g;
+						my $linkercollapsedfile = $is."_".$bp."_linkercollapsed.fasta";
+						my $linkerconsensus = consensus_seqs($linkercollapsedfile, \@{$refisbpdirlinkers_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir}});
+						$linkerconsensus =~ s/-//g;
 						my $iscollapsedfile = $is."_".$bp."_iscollapsed.fasta";
 						my $isconsensus = consensus_seqs($iscollapsedfile, \@{$refisbpdirr1humanseqs_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir}});
 						$isconsensus =~ s/-//g;
@@ -239,7 +256,7 @@ sub outputConsensusISbreakpointCSVFile {
 						if ($r1ref eq $r2ref) {
 							$fragmentsize = abs($bp - $is) + 1;
 						} 
-						print OUT "$r1ref,$is,$r2ref,$bp,$fragmentsize,$dir,$isgene,$genedir,$genestart,$geneend,$refbpdirmulti_ref->{$r2ref}->{$bp}->{$dir},$refisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$isconsensus,$bpconsensus,$umiconsensus\n";
+						print OUT "$r1ref,$is,$r2ref,$bp,$fragmentsize,$dir,$isgene,$genedir,$genestart,$geneend,$refbpdirmulti_ref->{$r2ref}->{$bp}->{$dir},$refisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$sub_ltr,$ltrconsensus,$isconsensus,$linkerconsensus,$bpconsensus,$umiconsensus\n";
 					}
 				}
 			}

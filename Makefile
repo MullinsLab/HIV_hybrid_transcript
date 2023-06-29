@@ -78,7 +78,7 @@ $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv : $(OUTPUT)/$(sample)/$(sampl
 	$(BIN)/parseSamBreakpoint.pl $^ $@ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK_trimmed.csv $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed_umi.csv $(LTR) $(MINMAPLEN)
 # get consensus IS and breakpoint mapping to human at least 99%
 $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv	
-	$(BIN)/getConsensusISBPWithIdentityFusionRepetitiveMapping.pl $^ $(GFF) $@ $(MINIDENTITY)
+	$(BIN)/getConsensusISBPWithIdentityFusionRepetitiveMapping.pl $^ $(GFF) $(LTR) $@ $(MINIDENTITY)
 # get final IS summary file
 $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP_Final.csv : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv	
 	$(BIN)/add_quality_control.pl $^ $@
