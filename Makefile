@@ -80,10 +80,10 @@ $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv : $(OUTPUT)/$(sample)/$(sampl
 $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv	
 	$(BIN)/getConsensusISBPWithIdentityFusionRepetitiveMapping.pl $^ $(GFF) $(LTR) $@ $(MINIDENTITY)
 # get final IS summary file
-$(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP_Final.csv : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv	
-	$(BIN)/add_quality_control.pl $^ $@
+#$(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP_Final.csv : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv	
+#	$(BIN)/add_quality_control.pl $^ $@
 # map to HIV (HXB2) genome
-$(OUTPUT)/$(sample)/$(sample)_bwa_hxb2.sam : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP_Final.csv
+$(OUTPUT)/$(sample)/$(sample)_bwa_hxb2.sam : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv
 	bwa mem -t $(THREADS) -o $@ $(HXB2) $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq
 # parse hiv sam file
 $(OUTPUT)/$(sample)/$(sample)_bwa_hxb2_parsed.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_hxb2.sam
