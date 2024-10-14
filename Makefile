@@ -2,7 +2,7 @@ SHELL := /bin/bash
 export SHELLOPTS:=errexit:pipefail
 .DELETE_ON_ERROR:
 
-# pipeline identifying IS from 5'/3' ends
+# pipeline identifying HIV hybrid transcript
 
 LTR ?= 3
 ERRORRATE ?= 0.1
@@ -14,11 +14,11 @@ MINQUALITY ?= 20
 MINREADLEN ?= 75
 BIN := script
 INPUT := data
-OUTPUT := output_$(LTR)LTR
+OUTPUT := output
 GFF := human_gff/GRCh38.p2_gene.gff
 HGENOME := human_genome/human_genome_GRCh38.p2/GCF_000001405.28_GRCh38.p2_genomic.fna
 HXB2 := HXB2/HXB2-K03455.fasta
-LTRFILE := seqs/$(LTR)ltr.fas
+LTRFILE := seqs/HIV_junction.fas
 ADPTFILE := seqs/adapter.fas
 LINKERFILE := seqs/linker.fas
 
@@ -76,14 +76,11 @@ $(OUTPUT)/$(sample)/$(sample)_bwa_human.sam : $(OUTPUT)/$(sample)/$(sample)_R2_s
 # parse human sam file
 $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human.sam
 	$(BIN)/parseSamBreakpoint.pl $^ $@ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK_trimmed.csv $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed_umi.csv $(LTR) $(MINMAPLEN)
-# get consensus IS and breakpoint mapping to human at least 99%
-$(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv	
+# get consensus TJS and breakpoint mapping to human at least 99%
+$(OUTPUT)/$(sample)/$(sample)_consensus_TJS_BP.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv	
 	$(BIN)/getConsensusISBPWithIdentityFusionRepetitiveMapping.pl $^ $(GFF) $(LTR) $@ $(MINIDENTITY)
-# get final IS summary file
-#$(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP_Final.csv : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv	
-#	$(BIN)/add_quality_control.pl $^ $@
 # map to HIV (HXB2) genome
-$(OUTPUT)/$(sample)/$(sample)_bwa_hxb2.sam : $(OUTPUT)/$(sample)/$(sample)_consensus_IS_BP.csv
+$(OUTPUT)/$(sample)/$(sample)_bwa_hxb2.sam : $(OUTPUT)/$(sample)/$(sample)_consensus_TJS_BP.csv
 	bwa mem -t $(THREADS) -o $@ $(HXB2) $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq
 # parse hiv sam file
 $(OUTPUT)/$(sample)/$(sample)_bwa_hxb2_parsed.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_hxb2.sam

@@ -173,7 +173,7 @@ while (my $line = <GFF>) {
 close GFF;
 
 open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
-print OUT "ISchr,Junction,BPchr,BP,Fragment_size,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_BP_count,total_IS_BP_count,pass_IS_BP_identity_".$cutoff."_count,LTR,LTR_consensus,IS_consensus,Linker_consensus,BP_consensus,UMI_consensus\n";
+print OUT "TJSchr,TJS,BPchr,BP,Fragment_size,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_BP_count,total_TJS_BP_count,pass_TJS_BP_identity_".$cutoff."_count,LTR,LTR_consensus,TJS_consensus,Linker_consensus,BP_consensus,UMI_consensus,Unique_fusion_repetitive\n";
 close OUT;
 
 if (%passcutoffrefisbpdirmulti) {
