@@ -173,22 +173,22 @@ while (my $line = <GFF>) {
 close GFF;
 
 open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
-print OUT "TJSchr,TJS,BPchr,BP,Fragment_size,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_BP_count,total_TJS_BP_count,pass_TJS_BP_identity_".$cutoff."_count,LTR,LTR_consensus,TJS_consensus,Linker_consensus,BP_consensus,UMI_consensus,Unique_fusion_repetitive\n";
+print OUT "Human_region_chr,Human_region_site,Breakpoint_chr,Breakpoint,Fragment_size,Chr_orientation,Gene,Gene_orientation,Gene_start,Gene_end,total_breakpoint_count,total_human_region_breakpoint_count,pass_human_region_breakpoint_identity_".$cutoff."_count,HIV_region_consensus,Human_region_consensus,Linker_consensus,Breakpoint_consensus,UMI_consensus,Unique_fusion_repetitive\n";
 close OUT;
 
 if (%passcutoffrefisbpdirmulti) {
-	outputConsensusISbreakpointCSVFile($outfile, $ltr, \%passcutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirltrs, \%refisbpdirr1humanseqs, \%refisbpdirlinkers, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene, 'unique');
+	outputConsensusISbreakpointCSVFile($outfile, \%passcutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirltrs, \%refisbpdirr1humanseqs, \%refisbpdirlinkers, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene, 'unique');
 }
 if (%fusionpasscutoffrefisbpdirmulti) {
-	outputConsensusISbreakpointCSVFile($outfile, $ltr, \%fusionpasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirltrs, \%refisbpdirr1humanseqs, \%refisbpdirlinkers, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene, 'fusion');
+	outputConsensusISbreakpointCSVFile($outfile, \%fusionpasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirltrs, \%refisbpdirr1humanseqs, \%refisbpdirlinkers, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene, 'fusion');
 }
 if (%repetitivepasscutoffrefisbpdirmulti) {
-	outputConsensusISbreakpointCSVFile($outfile, $ltr, \%repetitivepasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirltrs, \%refisbpdirr1humanseqs, \%refisbpdirlinkers, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene, 'repetitive');
+	outputConsensusISbreakpointCSVFile($outfile, \%repetitivepasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirltrs, \%refisbpdirr1humanseqs, \%refisbpdirlinkers, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, \%chromoGene, 'repetitive');
 }
 
 
 sub outputConsensusISbreakpointCSVFile {
-	my ($outfile, $sub_ltr, $passcutoffrefisbpdirmulti_ref, $refisbpdirumis_ref, $refisbpdirltrs_ref, $refisbpdirr1humanseqs_ref, $refisbpdirlinkers_ref, $refisbpdirr2humanseqs_ref, $refisbpdirmulti_ref, $refbpdirmulti_ref, $chromoGene_ref, $note) = @_;
+	my ($outfile, $passcutoffrefisbpdirmulti_ref, $refisbpdirumis_ref, $refisbpdirltrs_ref, $refisbpdirr1humanseqs_ref, $refisbpdirlinkers_ref, $refisbpdirr2humanseqs_ref, $refisbpdirmulti_ref, $refbpdirmulti_ref, $chromoGene_ref, $note) = @_;
 	open OUT, ">>", $outfile or die "couldn't open $outfile: $!\n";
 	foreach my $r1ref (sort {$a cmp $b} keys %{$passcutoffrefisbpdirmulti_ref}) {
 		foreach my $r2ref (sort {$a cmp $b} keys %{$passcutoffrefisbpdirmulti_ref->{$r1ref}}) {
@@ -256,7 +256,7 @@ sub outputConsensusISbreakpointCSVFile {
 						if ($r1ref eq $r2ref) {
 							$fragmentsize = abs($bp - $is) + 1;
 						} 
-						print OUT "$r1ref,$is,$r2ref,$bp,$fragmentsize,$dir,$isgene,$genedir,$genestart,$geneend,$refbpdirmulti_ref->{$r2ref}->{$bp}->{$dir},$refisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$sub_ltr,$ltrconsensus,$isconsensus,$linkerconsensus,$bpconsensus,$umiconsensus,$note\n";
+						print OUT "$r1ref,$is,$r2ref,$bp,$fragmentsize,$dir,$isgene,$genedir,$genestart,$geneend,$refbpdirmulti_ref->{$r2ref}->{$bp}->{$dir},$refisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$ltrconsensus,$isconsensus,$linkerconsensus,$bpconsensus,$umiconsensus,$note\n";
 					}
 				}
 			}

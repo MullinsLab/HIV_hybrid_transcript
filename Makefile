@@ -4,7 +4,6 @@ export SHELLOPTS:=errexit:pipefail
 
 # pipeline identifying HIV hybrid transcript
 
-LTR ?= 3
 ERRORRATE ?= 0.1
 MINMAPLEN ?= 20
 MINIDENTITY ?= 0.99
@@ -18,15 +17,16 @@ OUTPUT := output
 GFF := human_gff/GRCh38.p2_gene.gff
 HGENOME := human_genome/human_genome_GRCh38.p2/GCF_000001405.28_GRCh38.p2_genomic.fna
 HXB2 := HXB2/HXB2-K03455.fasta
-LTRFILE := seqs/HIV_junction.fas
+LTR := 3
+HIVFILE := seqs/HIV_region.fas
 ADPTFILE := seqs/adapter.fas
 LINKERFILE := seqs/linker.fas
 
-TEXT := $(shell script/parse_seqs.pl $(LTRFILE) $(ADPTFILE) $(LINKERFILE))
-LTRSEQ := $(word 1, $(TEXT))
+TEXT := $(shell script/parse_seqs.pl $(HIVFILE) $(ADPTFILE) $(LINKERFILE))
+HIVSEQ := $(word 1, $(TEXT))
 ADPTSEQ := $(word 2, $(TEXT))
 LINKERSEQ := $(word 3, $(TEXT))
-LTROVLP := $(word 4, $(TEXT))
+HIVOVLP := $(word 4, $(TEXT))
 ADPTOVLP := $(word 5, $(TEXT))
 LINKEROVLP := $(word 6, $(TEXT))
 
@@ -40,51 +40,51 @@ $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq $(OUTPUT)/$(sample)/$(sample)_R2_s
 	-p $(OUTPUT)/$(sample)/$(sample)_R2_sickle.fastq \
 	-s $(OUTPUT)/$(sample)/$(sample)_sickle_single.fastq \
 	> $(OUTPUT)/$(sample)/$(sample)_log.txt
-# trim LTR in filtered R1 reads
-$(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR.fastq : $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq
-	cutadapt --trimmed-only -g $(LTRSEQ) -O $(LTROVLP) -e $(ERRORRATE) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
+# trim HIV region in filtered R1 reads
+$(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV.fastq : $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq
+	cutadapt --trimmed-only -g $(HIVSEQ) -O $(HIVOVLP) -e $(ERRORRATE) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
 # retrieve paired R2 reads
-$(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR.fastq : $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR.fastq
+$(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV.fastq : $(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV.fastq
 	$(BIN)/retrievePairReadsFromFastq.pl $^ $(OUTPUT)/$(sample)/$(sample)_R2_sickle.fastq $@  >> $(OUTPUT)/$(sample)/$(sample)_log.txt
 # trim illumina reverse adapter in paired R2 reads
-$(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA.fastq : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR.fastq
+$(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA.fastq : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV.fastq
 	cutadapt --trimmed-only -g $(ADPTSEQ) -O $(ADPTOVLP) -e $(ERRORRATE) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
 # trim linker in paired R2 reads
-$(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA.fastq
+$(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK.fastq : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA.fastq
 	cutadapt --trimmed-only -g $(LINKERSEQ) -O $(LINKEROVLP) -e $(ERRORRATE) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
 # retrieve paired R1 reads
-$(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK.fastq : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq
-	$(BIN)/retrievePairReadsFromFastq.pl $^ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR.fastq $@  >> $(OUTPUT)/$(sample)/$(sample)_log.txt
+$(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV_RA_LK.fastq : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK.fastq
+	$(BIN)/retrievePairReadsFromFastq.pl $^ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV.fastq $@  >> $(OUTPUT)/$(sample)/$(sample)_log.txt
 # retrieve R1 trimmed sequences
-$(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK_trimmed.csv : $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK.fastq
-	$(BIN)/retrieveTrimmedSeq.pl $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq $^ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK_trimmed.fasta $@  >> $(OUTPUT)/$(sample)/$(sample)_log.txt 
+$(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV_RA_LK_trimmed.csv : $(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV_RA_LK.fastq
+	$(BIN)/retrieveTrimmedSeq.pl $(OUTPUT)/$(sample)/$(sample)_R1_sickle.fastq $^ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV_RA_LK_trimmed.fasta $@  >> $(OUTPUT)/$(sample)/$(sample)_log.txt 
 # retrieve R2 trimmed sequences
-$(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed.fasta : $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK_trimmed.csv
-	$(BIN)/retrieveTrimmedSeq.pl $(OUTPUT)/$(sample)/$(sample)_R2_sickle.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq $@ $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed.csv  >> $(OUTPUT)/$(sample)/$(sample)_log.txt 
-# trim illumina reverse adapter in _R2_sickle_$(LTR)LTR_RA_LK_trimmed.fasta
-$(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_UMI_LK.fasta : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed.fasta
+$(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK_trimmed.fasta : $(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV_RA_LK_trimmed.csv
+	$(BIN)/retrieveTrimmedSeq.pl $(OUTPUT)/$(sample)/$(sample)_R2_sickle.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK.fastq $@ $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK_trimmed.csv  >> $(OUTPUT)/$(sample)/$(sample)_log.txt 
+# trim illumina reverse adapter in _R2_sickle_HIV_RA_LK_trimmed.fasta
+$(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_UMI_LK.fasta : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK_trimmed.fasta
 	cutadapt --trimmed-only -g $(ADPTSEQ) -O $(ADPTOVLP) -e $(ERRORRATE) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
-# trim linker in _R2_sickle_$(LTR)LTR_UMI_LK.fasta
-$(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_UMI.fasta : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_UMI_LK.fasta
+# trim linker in _R2_sickle_HIV_UMI_LK.fasta
+$(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_UMI.fasta : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_UMI_LK.fasta
 	cutadapt --trimmed-only -a $(LINKERSEQ) -O $(LINKEROVLP) -e $(ERRORRATE) -o $@ $^ >> $(OUTPUT)/$(sample)/$(sample)_log.txt
-# append UMI to $(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed.csv
-$(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed_umi.csv : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_UMI.fasta
-	$(BIN)/append_umi.pl $^ $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed.csv $@
+# append UMI to $(sample)_R2_sickle_HIV_RA_LK_trimmed.csv
+$(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK_trimmed_umi.csv : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_UMI.fasta
+	$(BIN)/append_umi.pl $^ $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK_trimmed.csv $@
 # map to human genome
-$(OUTPUT)/$(sample)/$(sample)_bwa_human.sam : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed_umi.csv
-	bwa mem -t $(THREADS) -o $@ $(HGENOME) $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq
+$(OUTPUT)/$(sample)/$(sample)_bwa_human.sam : $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK_trimmed_umi.csv
+	bwa mem -t $(THREADS) -o $@ $(HGENOME) $(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV_RA_LK.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK.fastq
 # parse human sam file
 $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human.sam
-	$(BIN)/parseSamBreakpoint.pl $^ $@ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK_trimmed.csv $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed_umi.csv $(LTR) $(MINMAPLEN)
-# get consensus TJS and breakpoint mapping to human at least 99%
-$(OUTPUT)/$(sample)/$(sample)_consensus_TJS_BP.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv	
+	$(BIN)/parseSamBreakpoint.pl $^ $@ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV_RA_LK_trimmed.csv $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK_trimmed_umi.csv $(LTR) $(MINMAPLEN)
+# get consensus Human region site and breakpoint mapping to human at least 99%
+$(OUTPUT)/$(sample)/$(sample)_consensus_HRS_BP.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_human_parsed.csv	
 	$(BIN)/getConsensusISBPWithIdentityFusionRepetitiveMapping.pl $^ $(GFF) $(LTR) $@ $(MINIDENTITY)
 # map to HIV (HXB2) genome
-$(OUTPUT)/$(sample)/$(sample)_bwa_hxb2.sam : $(OUTPUT)/$(sample)/$(sample)_consensus_TJS_BP.csv
-	bwa mem -t $(THREADS) -o $@ $(HXB2) $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK.fastq
+$(OUTPUT)/$(sample)/$(sample)_bwa_hxb2.sam : $(OUTPUT)/$(sample)/$(sample)_consensus_HRS_BP.csv
+	bwa mem -t $(THREADS) -o $@ $(HXB2) $(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV_RA_LK.fastq $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK.fastq
 # parse hiv sam file
 $(OUTPUT)/$(sample)/$(sample)_bwa_hxb2_parsed.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_hxb2.sam
-	$(BIN)/parseSamBreakpoint.pl $^ $@ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_$(LTR)LTR_RA_LK_trimmed.csv $(OUTPUT)/$(sample)/$(sample)_R2_sickle_$(LTR)LTR_RA_LK_trimmed_umi.csv $(LTR) $(MINMAPLEN)
+	$(BIN)/parseSamBreakpoint.pl $^ $@ $(OUTPUT)/$(sample)/$(sample)_R1_sickle_HIV_RA_LK_trimmed.csv $(OUTPUT)/$(sample)/$(sample)_R2_sickle_HIV_RA_LK_trimmed_umi.csv $(LTR) $(MINMAPLEN)
 # get consensus R1 and R2 (trimmed all primers, linker and adaptors) mapping to HXB2 at least 90%
 $(OUTPUT)/$(sample)/$(sample)_consensus_R1_R2_mapping2HIV.csv : $(OUTPUT)/$(sample)/$(sample)_bwa_hxb2_parsed.csv
 	$(BIN)/getHIVOnlyConsensus.pl $^ $@ $(HIVMINIDENTITY)

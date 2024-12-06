@@ -159,7 +159,7 @@ while (my $line = <SAM>) {
 	}else {
 		if (!$flagstatus{$flag}) {
 			++$flagstatus{$flag};
-			print "flag: $flag\n";
+			#print "flag: $flag\n";
 		}
 	}
 
