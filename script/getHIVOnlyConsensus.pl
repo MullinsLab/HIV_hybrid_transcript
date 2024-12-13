@@ -132,26 +132,24 @@ while (my $line = <IS>) {
 }
 close IS;
 
+open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
+print OUT "R1ref,R1start,R2ref,R2end,Fragment_size,Orientation,total_R2_count,total_R1-R2_count,pass_R1-R2_identity_".$cutoff."_count,R1_consensus,R2_consensus,UMI_consensus,Unique_fusion_repetitive\n";
+close OUT;
+
 if (%passcutoffrefisbpdirmulti) {
-	outputConsensusISbreakpointCSVFile($outfile, \%passcutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti);
-}else {
-	print "*** No pair of reads maps to HIV ***\n";
-	open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
-	print OUT "No pair of reads maps to HIV\n";
-	close OUT;
+	outputConsensusISbreakpointCSVFile($outfile, \%passcutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, 'unique');
 }
 if (%fusionpasscutoffrefisbpdirmulti) {
-	outputConsensusISbreakpointCSVFile($fusionfile, \%fusionpasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti);
+	outputConsensusISbreakpointCSVFile($outfile, \%fusionpasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, 'fusion');
 }
 if (%repetitivepasscutoffrefisbpdirmulti) {
-	outputConsensusISbreakpointCSVFile($repetitivefile, \%repetitivepasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti);
+	outputConsensusISbreakpointCSVFile($outfile, \%repetitivepasscutoffrefisbpdirmulti, \%refisbpdirumis, \%refisbpdirr1humanseqs, \%refisbpdirr2humanseqs, \%refisbpdirmulti, \%refbpdirmulti, 'repetitive');
 }
 
 
 sub outputConsensusISbreakpointCSVFile {
-	my ($outfile, $passcutoffrefisbpdirmulti_ref, $refisbpdirumis_ref, $refisbpdirr1humanseqs_ref, $refisbpdirr2humanseqs_ref, $refisbpdirmulti_ref, $refbpdirmulti_ref) = @_;
-	open OUT, ">", $outfile or die "couldn't open $outfile: $!\n";
-	print OUT "R1ref,R1start,R2ref,R2end,Fragment_size,Orientation,total_R2_count,total_R1-R2_count,pass_R1-R2_identity_".$cutoff."_count,R1_consensus,R2_consensus,UMI_consensus\n";
+	my ($outfile, $passcutoffrefisbpdirmulti_ref, $refisbpdirumis_ref, $refisbpdirr1humanseqs_ref, $refisbpdirr2humanseqs_ref, $refisbpdirmulti_ref, $refbpdirmulti_ref, $note) = @_;
+	open OUT, ">>", $outfile or die "couldn't open $outfile: $!\n";
 	foreach my $r1ref (sort {$a cmp $b} keys %{$passcutoffrefisbpdirmulti_ref}) {
 		foreach my $r2ref (sort {$a cmp $b} keys %{$passcutoffrefisbpdirmulti_ref->{$r1ref}}) {
 			foreach my $is (sort {$a <=> $b} keys %{$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}}) {
@@ -170,7 +168,7 @@ sub outputConsensusISbreakpointCSVFile {
 						if ($r1ref eq $r2ref) {
 							$fragmentsize = abs($bp - $is) + 1;
 						} 
-						print OUT "$r1ref,$is,$r2ref,$bp,$fragmentsize,$dir,$refbpdirmulti_ref->{$r2ref}->{$bp}->{$dir},$refisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$isconsensus,$bpconsensus,$umiconsensus\n";
+						print OUT "$r1ref,$is,$r2ref,$bp,$fragmentsize,$dir,$refbpdirmulti_ref->{$r2ref}->{$bp}->{$dir},$refisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$passcutoffrefisbpdirmulti_ref->{$r1ref}->{$r2ref}->{$is}->{$bp}->{$dir},$isconsensus,$bpconsensus,$umiconsensus,$note\n";
 					}
 				}
 			}
